@@ -29,11 +29,11 @@ Examples:
   ./plankton-swarm.sh source-osds osd.1,osd.2 7
     - Use OSDs osd.1 and osd.2 with pg_limit set to 7.
 
-  ./plankton-swarm.sh 90 15 5
-    - Detect overused OSDs above 90% usage, move 15 PGs each from the top 5.
+  ./plankton-swarm.sh 90 15 5 60
+    - Detect overused OSDs above 90% usage, move 15 PGs each from the top 5 to OSDs below 60% utilization.
 
   ./plankton-swarm.sh 91 5 all
-    - Detect all overused OSDs above 91% usage, move 5 PGs from each one.
+    - Detect all overused OSDs above 91% usage, move 5 PGs from each one to OSDs below 65% (default) utilization.
 
 EOF
 }
