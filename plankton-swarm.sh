@@ -9,11 +9,11 @@ Inspired by their natural harmony, "Plankton" becomes the perfect name for balan
 This is a simple basic manual balancer to move replicated pgs from most full OSDs to least full ones with node failure domain.
 
 Usage:
-  plankton-swarm.sh [overused_threshold] [pg_limit] [top_n_osds] [underused_threshold]
-    - Automatically detect overused OSDs with usage above the threshold.
-    - Specify the number of PGs to move per OSD (default: 10).
-    - Specify the top N overused OSDs to process (default: 3).
-    - Use 'all' flag instead of top_n_osds for all overused OSDs
+  plankton-swarm.sh [overused_threshold] [pg_limit] [top_n_osds/all] [underused_threshold]
+    - overused_threshold: utilization (%) above which OSDs are considered overused.
+    - pg_limit: specify the number of PGs to move per OSD (default: 10).
+    - top_n_osds: specify the top N overused OSDs to process (default: 3). Use 'all' flag instead for all overused OSDs.
+    - underused_threshold: usage below which OSDs become targets (default: 65%).
 
   plankton-swarm.sh source-osds <osd1,osd2,...> [pg_limit]
     - Use a custom list of source OSDs.
@@ -24,13 +24,13 @@ Options:
 
 Examples:
   ./plankton-swarm.sh source-osds osd.1,osd.2
-    - Use OSDs osd.1 and osd.2 with default pg_limit of 10.
+    - Use OSDs osd.1 and osd.2 as source - move 10 pgs to OSDs below 65% utilization (defaults).
 
-  ./plankton-swarm.sh source-osds osd.1,osd.2 7
-    - Use OSDs osd.1 and osd.2 with pg_limit set to 7.
+  ./plankton-swarm.sh source-osds osd.3,osd.4 7
+    - Use OSDs osd.3 and osd.4 as source - move 7 pgs to OSDs below 65%.
 
   ./plankton-swarm.sh 90 15 5 60
-    - Detect overused OSDs above 90% usage, move 15 PGs each from the top 5 to OSDs below 60% utilization.
+    - Detect overused OSDs above 90%, move 15 PGs from each of the top 5 OSDs to OSDs with below 60% utilization.
 
   ./plankton-swarm.sh 91 5 all
     - Detect all overused OSDs above 91% usage, move 5 PGs from each one to OSDs below 65% (default) utilization.
