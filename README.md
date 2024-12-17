@@ -15,7 +15,7 @@ Usage examples:
     - Move 10 pgs (default) from osd.1 and osd.2 to OSDs below 65% (default) utilization.
 ```
 
-This tool is harmless to run as it only generates an executable **swam-file**.
+This tool is harmless to run as it only generates an executable **swarm-file**.
 You can run it directly:
 ```
 ./plankton-swarm.sh <your-options> && bash swarm-file
