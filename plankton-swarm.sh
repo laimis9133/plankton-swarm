@@ -43,6 +43,9 @@ pg_limit=10
 top_n_osds=3
 underused_threshold=65
 
+balance_file="swarm-file"
+pg_pre_fetch=3 # Used to fetch a bit more pgs (pg_pre_fetch * pg_limit)
+
 custom_osds=""
 overused_threshold=""
 
@@ -125,8 +128,6 @@ underused_osds=$(ceph osd df -f json | jq -r --argjson threshold "$underused_thr
 echo "Underused OSDs (<$underused_threshold%): $underused_osds"
 
 echo "Will now find ways to move $pg_limit pgs in each OSD respecting node failure domain."
-
-balance_file="swarm-file"
 > "$balance_file"
 
 
@@ -138,8 +139,13 @@ json_data=$(ceph osd tree -f json)
 for osd in "${overused_list[@]}"; do
   echo "Processing OSD $osd..."
 
-  pgs=$(ceph pg dump | grep ",$osd]" | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$pg_limit")
+  pgs=$(ceph pg dump | grep ",$osd]" | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
+  if [[ -z "$pgs" ]]; then
+    echo "No active and clean pgs found for $osd, skipping."
+    continue
+  fi
 
+  pg_count=0
   while read -r pg acting_set; do
     IFS=',' read -r -a acting_osds <<< "$(echo "$acting_set" | tr -d '[]')"
 
@@ -162,24 +168,30 @@ for osd in "${overused_list[@]}"; do
       for acting_osd in "${acting_osds[@]}"; do
         if [[ "${osd_to_host_id[$acting_osd]}" == "$new_host_id" ]]; then
           host_conflict=true
-          echo "New mapping for osd.$osd to osd.$acting_osd is breaking failure domain (host) - retrying."
-          break
+          echo "New mapping for $pg (from osd.$acting_osd to osd.$new_osd) is breaking failure domain (host) - retrying."
         fi
       done
 
-      if [[ "$host_conflict" == false ]]; then
-        selected_osd="$new_osd"
-        break
+      if [[ "$host_conflict" == true ]]; then
+        continue
       fi
+
+      selected_osd="$new_osd"
     done
 
     if [[ -n "$selected_osd" ]]; then
       echo "ceph osd pg-upmap-items $pg $osd $selected_osd"
       echo "ceph osd pg-upmap-items $pg $osd $selected_osd" >> "$balance_file"
+      ((pg_count++))
     else
-      echo "No suitable OSD found for PG $pg from OSD $osd"
+      echo "No suitable OSD found for PG $pg. Sorry."
+    fi
+
+    if [[ "$pg_count" -ge "$pg_limit" ]]; then
+      break
     fi
   done <<< "$pgs"
 done
 
-echo "Balance pgs commands written to $balance_file - review and run it with 'bash $balance_file'."
+echo "Balance pgs commands written to $balance_file - review and let planktons swarm with 'bash $balance_file'."
+
