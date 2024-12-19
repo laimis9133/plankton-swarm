@@ -26,8 +26,8 @@ Examples:
   ./plankton-swarm.sh source-osds osd.1,osd.2
     - Use OSDs osd.1 and osd.2 as source - move 10 pgs to OSDs below 65% utilization (defaults).
 
-  ./plankton-swarm.sh source-osds osd.3,osd.4 7
-    - Use OSDs osd.3 and osd.4 as source - move 7 pgs to OSDs below 65%.
+  ./plankton-swarm.sh source-osds osd.3,osd.4 7 50
+    - Use OSDs osd.3 and osd.4 as source - move 7 pgs to OSDs with below 50% utilization.
 
   ./plankton-swarm.sh 90 15 5 60
     - Detect overused OSDs above 90%, move 15 PGs from each of the top 5 OSDs to OSDs with below 60% utilization.
@@ -60,6 +60,11 @@ while [[ $# -gt 0 ]]; do
             shift 2
             if [[ $# -gt 0 ]]; then
                 pg_limit="$1"
+                shift
+            fi
+
+            if [[ $# -gt 0 ]]; then
+                underused_threshold="$1"
                 shift
             fi
             ;;
