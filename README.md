@@ -15,8 +15,8 @@ Usage examples:
   ./plankton-swarm.sh source-osds 1,2
   - Move 3 pgs (default) from osd.1 and osd.2 to OSDs below 65% (default) utilization
 
-  ./plankton-swarm.sh source-osds gt88 10 target-osds lt65 5 pgs 10 keep-upmaps
-  - Moves 10 PGs from top 10 OSDs above 88% to 5 least utilized OSDs below 65%
+  ./plankton-swarm.sh source-osds gt88 10 target-osds lt60 5 pgs 10 keep-upmaps
+  - Moves 10 PGs from top 10 OSDs above 88% to 5 least utilized OSDs below 60%
   - Skips pgs that already have upmap
 
   ./plankton-swarm.sh help
