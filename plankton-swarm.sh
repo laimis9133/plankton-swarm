@@ -9,7 +9,7 @@ This is a simple basic manual balancer to move replicated pgs from most full OSD
 Upon run it will generate a 'swarm-file' that you can review and execute.
 
 Usage: plankton-swarm.sh source-osds [...] target-osds [...] pgs [...] 
-       (optional flags: keep-upmaps/check-upmaps, respect-avg-pg)
+       (optional flags: keep-upmaps/ignore-upmaps, respect-avg-pg)
 
 Examples:
 1. Move PGs from specific OSDs to specific OSDs:
@@ -20,7 +20,7 @@ Examples:
 2. Move PGs from overutilized OSDs to specific OSDs:
 
    ./plankton-swarm.sh source-osds gt85 target-osds 1,2 pgs 10
-   # Moves 10 PGs from OSDs above 85% utilization to OSDs 1,2
+   # Moves 10 PGs from OSDs above 85% utilization to OSDs osd.1,osd.2
    # Uses default top 3 most utilized OSDs as source
 
 3. Move PGs from overutilized OSDs to underutilized OSDs:
@@ -193,6 +193,10 @@ while [[ $# -gt 0 ]]; do
             keep_upmaps=true
             shift
             ;;
+        sort-by-pgs)
+            by_pgs=true
+            shift
+            ;;
         *)
             show_help
             exit 1
@@ -219,11 +223,11 @@ elif [[ -n "$source_range_min" && -n "$source_range_max" ]]; then
     echo "Source OSDs (${source_range_min}%-${source_range_max}%): $overused_osds"
 elif [[ -n "$overused_threshold" ]]; then
     threshold_value=$(echo "$overused_threshold" | tr -dc '0-9')
-    
-    overused_osds=$(ceph osd df -f json | jq -r --argjson threshold "$threshold_value" --arg top_n "$top_n_osds" '
+    # Experimental: added sorting by pgs with sort-by-pgs
+    overused_osds=$(ceph osd df -f json | jq -r --argjson threshold "$threshold_value" --arg top_n "$top_n_osds" --arg by_pgs "${by_pgs:-}" '
         .nodes
-        | map(select(.utilization >= $threshold))
-        | sort_by(-.utilization)
+        | map(select(if $by_pgs == "true" then .pgs >= $threshold else .utilization >= $threshold end))
+        | sort_by(if $by_pgs == "true" then -(.pgs) else -(.utilization) end)
         | (if $top_n == "all" then . else .[:($top_n | tonumber)] end)
         | map(.id)
         | join(",")
@@ -303,8 +307,8 @@ json_data=$(ceph osd tree -f json)
 for osd in "${overused_list[@]}"; do
     echo "Processing OSD $osd..."
 
-    
-    pgs=$(ceph pg dump | grep ",$osd]" | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
+    #pgs=$(ceph pg dump | grep ",$osd]" | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
+    pgs=$(ceph pg dump | grep -E ",$osd]|,$osd," | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
     if [[ -z "$pgs" ]]; then
         echo "No active and clean pgs found for $osd. Skipping."
         continue
