@@ -70,6 +70,7 @@ Notes:
 - When using thresholds, displayed OSDs are sorted by utilization (highest first for source, lowest first for target).
 - Use 'respect-avg-pg' flag to find target OSDs with below average pg count (experimental).
 - To generate a larger list of possible pgs a pg_pre_fetch multiplier is used. Increase it in case you run into a lot of 'Skipping.' messages for pgs.
+- Experimental: flag 'sort-by-pgs' will sort source OSDs by the number of pgs in each OSD. This feature is still WIP.
 
 EOF
 }
