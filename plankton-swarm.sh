@@ -9,7 +9,7 @@ This is a simple basic manual balancer to move replicated pgs from most full OSD
 Upon run it will generate a 'swarm-file' that you can review and execute.
 
 Usage: plankton-swarm.sh source-osds [...] target-osds [...] pgs [...] 
-       (optional flags: keep-upmaps/ignore-upmaps, respect-avg-pg)
+       (optional flags: keep-upmaps/check-upmaps, respect-avg-pg)
 
 Examples:
 1. Move PGs from specific OSDs to specific OSDs:
