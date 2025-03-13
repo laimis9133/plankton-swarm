@@ -70,6 +70,7 @@ Notes:
 - When using thresholds, displayed OSDs are sorted by utilization (highest first for source, lowest first for target).
 - Use 'respect-avg-pg' flag to find target OSDs with below average pg count (experimental).
 - To generate a larger list of possible pgs a pg_pre_fetch multiplier is used. Increase it in case you run into a lot of 'Skipping.' messages for pgs.
+- Flag 'all-replicas' will use all secondary pgs when building a list to move instead of only the last replica pg in the acting set (more movement options).
 - Experimental: flag 'sort-by-pgs' will sort source OSDs by the number of pgs in each OSD. This feature is still WIP.
 
 EOF
@@ -198,6 +199,10 @@ while [[ $# -gt 0 ]]; do
             by_pgs=true
             shift
             ;;
+        all-replicas)
+            all_replicas=true
+            shift
+            ;;
         *)
             show_help
             exit 1
@@ -308,8 +313,12 @@ json_data=$(ceph osd tree -f json)
 for osd in "${overused_list[@]}"; do
     echo "Processing OSD $osd..."
 
-    #pgs=$(ceph pg dump | grep ",$osd]" | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
-    pgs=$(ceph pg dump | grep -E ",$osd]|,$osd," | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
+    if $all_replicas; then
+        pgs=$(ceph pg dump | grep -E ",$osd]|,$osd," | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
+    else
+        pgs=$(ceph pg dump | grep ",$osd]" | grep -P 'active\+clean(?!\+)' | awk '{print $1, $19}' | head -n "$((pg_limit * pg_pre_fetch))" | shuf)
+    fi
+
     if [[ -z "$pgs" ]]; then
         echo "No active and clean pgs found for $osd. Skipping."
         continue
