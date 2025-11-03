@@ -7,6 +7,7 @@ Inspired by their natural harmony, "Plankton" becomes the perfect name for balan
 
 This is a simple basic manual balancer to move replicated pgs from most full OSDs to least full ones with node failure domain.
 Upon run it will generate a 'swarm-file' that you can review and execute.
+This balancer works best in clusters with a large number of nodes due to default node failure domain.
 
 Usage: plankton-swarm.sh source-osds [...] target-osds [...] pgs [...] 
        (optional flags: keep-upmaps/check-upmaps, respect-avg-pg)
